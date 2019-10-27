@@ -1,11 +1,16 @@
-
 import telebot
+import telebot.apihelper
 
-bot = telebot.TeleBot('token')
+api_token = '<TOKEN>'
 
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-	bot.reply_to(message, "Howdy, how are you doing?")
-
-bot.polling(none_stop=True, interval=0)
+def is_member(char_id: str, user_id: str):
+    try:
+        ans = telebot.apihelper.get_chat_member(api_token, char_id, user_id)
+        status = ans['status']
+        return status != 'left' and status != 'kicked'
+    except Exception as exp:
+        # TODO логгировать юзера
+        print(exp)
+        print(char_id, user_id)
+        return False
