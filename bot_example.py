@@ -51,16 +51,14 @@ def publish_claim_to_chat(text):
     markup.add(btn_my_site1)
     markup.add(btn_my_site2)
     message = bot.send_message(PRP.STUDENT_CHAT_ID, text, reply_markup=markup)
-    polling_status[message.message_id] = [0,0,0]
-
-
-
+    polling_status[message.message_id] = [set(),set(),set()]
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def test_callback(call):
     markup = types.InlineKeyboardMarkup()
     message_id = call.message.message_id
+    user_id = call.from_user.id
     type_of_query = call.data
     if message_id not in polling_status:
         return
@@ -68,17 +66,32 @@ def test_callback(call):
     stat = polling_status[message_id]
 
     if type_of_query == "LIKE":
-        stat[0] = stat[0] + 1
+        if user_id not in stat[0]:
+            stat[0].add(user_id)
+        else:
+            stat[0].remove(user_id)
+        stat[1].discard(user_id)
+        stat[2].discard(user_id)
     elif type_of_query == "HATE":
-        stat[1] = stat[1] + 1
+        if user_id not in stat[1]:
+            stat[1].add(user_id)
+        else:
+            stat[1].remove(user_id)
+        stat[0].discard(user_id)
+        stat[2].discard(user_id)
     elif type_of_query == 'NOT_KNOW':
-        stat[2] = stat[2] + 1
+        if user_id not in stat[2]:
+            stat[2].add(user_id)
+        else:
+            stat[2].remove(user_id)
+        stat[0].discard(user_id)
+        stat[1].discard(user_id)
     else:
         return;
 
-    btn_my_site = types.InlineKeyboardButton(f"ДА {stat[0]}", callback_data="LIKE")
-    btn_my_site1 = types.InlineKeyboardButton(f"НЕТ {stat[1]}", callback_data="HATE")
-    btn_my_site2 = types.InlineKeyboardButton(f"НЕ ЗНАЮ {stat[2]}", callback_data="NOT_KNOW")
+    btn_my_site = types.InlineKeyboardButton(f"ДА {len(stat[0])}", callback_data="LIKE")
+    btn_my_site1 = types.InlineKeyboardButton(f"НЕТ {len(stat[1])}", callback_data="HATE")
+    btn_my_site2 = types.InlineKeyboardButton(f"НЕ ЗНАЮ {len(stat[2])}", callback_data="NOT_KNOW")
     markup.add(btn_my_site)
     markup.add(btn_my_site1)
     markup.add(btn_my_site2)
