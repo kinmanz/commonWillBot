@@ -9,3 +9,4 @@
   - Enter
   - Вводим пароль
   - `windscribe connect`
+  - to disconect `windscribe disconnect`
