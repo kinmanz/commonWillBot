@@ -74,9 +74,8 @@ def publish_claim_to_chat(text):
     btn_my_site1 = types.InlineKeyboardButton(EMOJI.THUMBS_DOWN + " 0", callback_data="HATE")
     btn_my_site2 = types.InlineKeyboardButton("НЕ ЗНАЮ 0", callback_data="NOT_KNOW")
 
-    markup.add(btn_my_site)
-    markup.add(btn_my_site1)
-    markup.add(btn_my_site2)
+    l = [btn_my_site, btn_my_site1, btn_my_site2]
+    markup.row(*l)
     message = bot.send_message(PRP.STUDENT_CHAT_ID, text, reply_markup=markup)
     polling_status[message.message_id] = [set(), set(), set()]
 
@@ -119,9 +118,8 @@ def test_callback(call):
     btn_my_site = types.InlineKeyboardButton(f"{EMOJI.THUMBS_UP} {len(stat[0])}", callback_data="LIKE")
     btn_my_site1 = types.InlineKeyboardButton(f"{EMOJI.THUMBS_DOWN} {len(stat[1])}", callback_data="HATE")
     btn_my_site2 = types.InlineKeyboardButton(f"{EMOJI.EYE} {len(stat[2])}", callback_data="NOT_KNOW")
-    markup.add(btn_my_site)
-    markup.add(btn_my_site1)
-    markup.add(btn_my_site2)
+    l = [btn_my_site, btn_my_site1, btn_my_site2]
+    markup.row(*l)
     print(call)
 
     bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=message_id, reply_markup=markup)
