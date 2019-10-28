@@ -46,7 +46,7 @@ def publish_claim_to_chat(text):
     markup = types.InlineKeyboardMarkup()
     btn_my_site = types.InlineKeyboardButton(EMOJI.THUMBS_UP + " 0", callback_data="LIKE")
     btn_my_site1 = types.InlineKeyboardButton(EMOJI.THUMBS_DOWN + " 0", callback_data="HATE")
-    btn_my_site2 = types.InlineKeyboardButton("НЕ ЗНАЮ 0", callback_data="NOT_KNOW")
+    btn_my_site2 = types.InlineKeyboardButton(EMOJI.EYE + " 0", callback_data="NOT_KNOW")
 
     markup.add(btn_my_site)
     markup.add(btn_my_site1)
@@ -92,7 +92,7 @@ def test_callback(call):
 
     btn_my_site = types.InlineKeyboardButton(f"{EMOJI.THUMBS_UP} {len(stat[0])}", callback_data="LIKE")
     btn_my_site1 = types.InlineKeyboardButton(f"{EMOJI.THUMBS_DOWN} {len(stat[1])}", callback_data="HATE")
-    btn_my_site2 = types.InlineKeyboardButton(f"НЕ ЗНАЮ {len(stat[2])}", callback_data="NOT_KNOW")
+    btn_my_site2 = types.InlineKeyboardButton(f"{EMOJI.EYE} {len(stat[2])}", callback_data="NOT_KNOW")
     markup.add(btn_my_site)
     markup.add(btn_my_site1)
     markup.add(btn_my_site2)

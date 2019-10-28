@@ -6,3 +6,4 @@ class PRP:
 class EMOJI:
     THUMBS_UP = "\U0001F44D"
     THUMBS_DOWN = u"\U0001F44E"
+    EYE = u"\U0001F914"
