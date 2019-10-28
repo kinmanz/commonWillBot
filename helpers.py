@@ -1,3 +1,9 @@
+import time
+from collections import deque
+
+from property import ALLOWED_TIME_PASSED, REJECTION, REJECTION_TIME
+
+
 def log(*messages):
     # TODO Real logging
     print(*messages)
@@ -35,3 +41,29 @@ class PollStat:
         yield self.likes
         yield self.dislikes
         yield self.rejects
+
+
+class TimeProtector:
+
+    def __init__(self):
+        self.last_time = time.time()
+
+    def refresh_time(self):
+        self.last_time = time.time()
+
+    def can_post(self):
+        return time.time() - self.last_time >= ALLOWED_TIME_PASSED
+
+
+class RejectProtector:
+
+    def __init__(self):
+        self.rejections = deque(maxlen=REJECTION)
+
+    def add_rejection(self):
+        self.rejections.append(time.time())
+
+    def can_post(self):
+        if len(self.rejections) == REJECTION:
+            return time.time() - self.rejections[0] >= REJECTION_TIME
+        return True

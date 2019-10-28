@@ -5,12 +5,13 @@ import telebot
 import telebot.apihelper
 from telebot import types
 
-from helpers import log, PollStat
+from helpers import log, PollStat, RejectProtector, TimeProtector
 from property import *
 
 bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
 
 TRACKED_POLLS = {}
+MULTI_POLLS_PROTECTION = {}
 
 LAST_WILL_USED_USERS = set()
 
@@ -56,7 +57,12 @@ def send_welcome(message):
                      )
         bot.send_message(
             message.chat.id,
-            "Если тебе охота сказать последнее слово используй #last_will",
+            "<b>Помни:</b>\n"
+            f"{EMOJI.POINT_RIGHT} Любому студенту положен 1 пост в день.\n"
+            f"{EMOJI.POINT_RIGHT} Если многие поставят тебе {EMOJI.REJECT} ты не сможешь постить своё "
+            "мнение очень и очень долго.\n\n"
+            "Если тебе охота сказать последнее слово используй #last_will\n"
+            "(его говорят только однажды и сразу в общий чат).",
             parse_mode="HTML"
         )
 
@@ -89,6 +95,27 @@ def last_will(message):
 @bot.message_handler(regexp='^#aloud_in_private\s(\w|\W)*')
 def publish_claim(message):
     user_id = message.from_user.id
+
+    # protection from bad users
+    if user_id not in MULTI_POLLS_PROTECTION:
+        MULTI_POLLS_PROTECTION[user_id] = (TimeProtector(), RejectProtector())
+    else:
+        time_protector: TimeProtector = MULTI_POLLS_PROTECTION[user_id][0]
+        reject_protector: TimeProtector = MULTI_POLLS_PROTECTION[user_id][1]
+        if not time_protector.can_post():
+            send_stiker(message.chat.id, "khkh")
+            bot.reply_to(message,
+                         "Жди день перед тем как можно будет отправить ещё.")
+            return
+        if not reject_protector.can_post():
+            send_stiker(message.chat.id, "khkh")
+            bot.reply_to(
+                message,
+                "Ты часто пишешь неправильные вещи. В этот раз ты сам по себе."
+            )
+            return
+        time_protector.refresh_time()
+
     if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
         text = message.html_text[len('#aloud_in_private'):]
         send_stiker(message.chat.id, "claim_accepted")
@@ -100,17 +127,21 @@ def publish_claim(message):
 
 def handle_poll(message, message_id) -> bool:
     stat: PollStat = TRACKED_POLLS[message_id]
-    likes, dislikes, hates = stat
+    likes, dislikes, rejects = stat
 
-    should_delete = False
+    should_delete = len(rejects) >= DELETE_MESSAGE_COUNT
+    should_publish = False
 
-    if len(likes) + len(dislikes) + len(hates) < MINIMUM_COUNT:
-        return should_delete
+    if not should_delete and \
+            len(likes) + len(dislikes) + len(rejects) >= PUBLISH_MESSAGE_COUNT:
+        should_publish = len(likes) > (len(dislikes) + len(rejects))
+        should_delete = len(likes) * 1.2 <= (len(dislikes) + len(rejects))
 
-    should_publish = len(likes) > len(dislikes) + len(hates)
-    should_delete = len(hates) >= DELETE_MESSAGE_COUNT or should_publish
+    if len(likes) + len(dislikes) + len(rejects) >= 30:
+        should_delete = True
 
     if should_publish:
+        should_delete = True
         text = message.message.html_text
         send_stiker(PRP.COMMON_CHAT, "common_chat_publish")
         bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text, parse_mode="HTML")
@@ -142,6 +173,7 @@ def poll_vote_update(call):
         return
 
     user_id = call.from_user.id
+
     type_of_query = call.data
 
     stat: PollStat = TRACKED_POLLS[message_id]
