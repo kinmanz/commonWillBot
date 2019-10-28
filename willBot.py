@@ -66,8 +66,12 @@ def handle_pool(message, message_id):
             bot.send_sticker(PRP.COMMON_CHAT, sti)
             bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text,parse_mode="HTML")
             bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
+            bot.delete_message(PRP.STUDENT_CHAT_ID, polling[3])
+            del polling_status[message_id]
         elif len(hates) >= DELETE_MESSAGE_COUNT:
             bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
+            bot.delete_message(PRP.STUDENT_CHAT_ID, polling[3])
+            del polling_status[message_id]
 
 
 def publish_claim_to_chat(text):
@@ -80,10 +84,10 @@ def publish_claim_to_chat(text):
     markup.row(*l)
 
     sti = open('stikers/cries.webp', 'rb')
-    bot.send_sticker(PRP.STUDENT_CHAT_ID, sti)
+    sti_msg = bot.send_sticker(PRP.STUDENT_CHAT_ID, sti)
 
     message = bot.send_message(PRP.STUDENT_CHAT_ID, text, reply_markup=markup)
-    polling_status[message.message_id] = [set(), set(), set()]
+    polling_status[message.message_id] = [set(), set(), set(), sti_msg.message_id]
 
 
 @bot.callback_query_handler(func=lambda call: True)
