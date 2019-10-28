@@ -5,7 +5,7 @@ import telebot
 import telebot.apihelper
 from telebot import types
 
-from helpers import log, PollStat, RejectProtector, TimeProtector
+from helpers import log, PollStat, RejectProtector, TimeProtector, clean_html
 from property import *
 
 bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
@@ -88,7 +88,7 @@ def last_will(message):
 
         text = message.html_text[len('#last_will '):]
         send_stiker(PRP.COMMON_CHAT, "last_will")
-        bot.send_message(PRP.COMMON_CHAT, "<b>ПОСЛЕДНЯЯ ВОЛЯ: </b>\n" + text, parse_mode="HTML")
+        bot.send_message(PRP.COMMON_CHAT, "<b>ПОСЛЕДНЯЯ ВОЛЯ: </b>\n" + clean_html(text), parse_mode="HTML")
 
 
 # TODO decorator
@@ -117,7 +117,7 @@ def publish_claim(message):
         time_protector.refresh_time()
 
     if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
-        text = message.html_text[len('#aloud_in_private'):]
+        text = message.html_text[len('#aloud_in_private '):]
         send_stiker(message.chat.id, "claim_accepted")
         bot.reply_to(message, "Ваше обращение принято.")
         publish_claim_to_chat(text)
@@ -144,7 +144,8 @@ def handle_poll(message, message_id) -> bool:
         should_delete = True
         text = message.message.html_text
         send_stiker(PRP.COMMON_CHAT, "common_chat_publish")
-        bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text, parse_mode="HTML")
+        bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b>\n"
+                         + text[len(POLL_TITLE):], parse_mode="HTML")
 
     if should_delete:
         bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
@@ -161,7 +162,12 @@ def publish_claim_to_chat(text):
     btn_my_site2 = types.InlineKeyboardButton(f"{EMOJI.REJECT} 0", callback_data="REJECT")
 
     markup = types.InlineKeyboardMarkup().row(btn_my_site, btn_my_site1, btn_my_site2)
-    message = bot.send_message(PRP.STUDENT_CHAT_ID, text, reply_markup=markup)
+    message = bot.send_message(
+        PRP.STUDENT_CHAT_ID,
+        POLL_TITLE + clean_html(text),
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
     TRACKED_POLLS[message.message_id] = PollStat(stiker_id=sti_msg.message_id)
 
 

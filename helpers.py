@@ -1,3 +1,4 @@
+import re
 import time
 from collections import deque
 
@@ -7,6 +8,13 @@ from property import ALLOWED_TIME_PASSED, REJECTION, REJECTION_TIME
 def log(*messages):
     # TODO Real logging
     print(*messages)
+
+
+REGEX_HTML_CLEANER = re.compile('<.*?>')
+
+
+def clean_html(raw_html):
+    return re.sub(REGEX_HTML_CLEANER, '', raw_html)
 
 
 class PollStat:
