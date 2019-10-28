@@ -6,26 +6,23 @@ import telebot.apihelper
 from telebot import types
 
 from helpers import log, PollStat
-from property import EMOJI, DELETE_MESSAGE_COUNT, MINIMUM_COUNT
-from property import PRP
-
-LAST_WILL_USERS_FILE = 'last_will.pickle'
+from property import *
 
 bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
 
 TRACKED_POLLS = {}
 
-last_will_users = set()
+LAST_WILL_USED_USERS = set()
 
 if os.path.isfile(LAST_WILL_USERS_FILE):
     with open(LAST_WILL_USERS_FILE, 'rb') as handle:
-        last_will_users = pickle.load(handle)
+        LAST_WILL_USED_USERS = pickle.load(handle)
 
 
 def add_last_will_user(user_id):
-    last_will_users.add(user_id)
+    LAST_WILL_USED_USERS.add(user_id)
     with open(LAST_WILL_USERS_FILE, 'ab') as handle:
-        pickle.dump(last_will_users, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(LAST_WILL_USED_USERS, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def in_private(message):
@@ -52,36 +49,45 @@ def send_stiker(chat_id, stiker_name):
 def send_welcome(message):
     if in_private(message):
         send_stiker(message.chat.id, "ready_to_work")
-        bot.reply_to(message, "Готов к работе. Напиши сообщение с тегом #aloud_in_private "
-                              "в самом начале, и я отправлю его в студенческий чат для голосования.")
+        bot.reply_to(message,
+                     "Готов к работе.\n"
+                     "Напиши сообщение с тегом #aloud_in_private "
+                     "в самом начале, и я отправлю его в студенческий чат для голосования."
+                     )
+        bot.send_message(
+            message.chat.id,
+            "Если тебе охота сказать последнее слово используй #last_will",
+            parse_mode="HTML"
+        )
 
 
 @bot.message_handler(regexp='^#last_will\s(\w|\W)*')
-def aloud_in_private(message):
-    user_id = message.from_user.id
-    if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
-        if user_id in last_will_users:
-            sticker_rejection = open('stikers/last_will_rejection.webp', 'rb')
-            bot.send_sticker(message.chat.id, sticker_rejection)
-            bot.reply_to(message, "Вы уже использовали последнию волю!")
-        else:
-            add_last_will_user(user_id)
-            text = message.html_text[len('#last_will'):]
-            sti_last_will = open('stikers/last_will.webp', 'rb')
-            sti = open('stikers/claim_accepted.webp', 'rb')
-
-            bot.send_sticker(message.chat.id, sti)
-            bot.reply_to(message, "Ваше обращение принято.")
-
-            bot.send_sticker(PRP.COMMON_CHAT, sti_last_will)
-            bot.send_message(PRP.COMMON_CHAT, "<b>Последняя воля была использована!</b>\n" + text, parse_mode="HTML")
-    else:
+def last_will(message):
+    if not in_private(message):
         bot.reply_to(message, "Эй, такое только в личку!")
+        return
+
+    user_id = message.from_user.id
+
+    if not is_member(PRP.STUDENT_CHAT_ID, user_id):
+        return
+
+    if user_id in LAST_WILL_USED_USERS:
+        send_stiker(message.chat.id, "no_last_will_left")
+        bot.reply_to(message, "Последняя воля уже использована!")
+    else:
+        add_last_will_user(user_id)
+        send_stiker(message.chat.id, "last_will_acceptance")
+        bot.reply_to(message, "Быть может жаль. Ваше обращение принято.")
+
+        text = message.html_text[len('#last_will '):]
+        send_stiker(PRP.COMMON_CHAT, "last_will")
+        bot.send_message(PRP.COMMON_CHAT, "<b>ПОСЛЕДНЯЯ ВОЛЯ: </b>\n" + text, parse_mode="HTML")
 
 
 # TODO decorator
 @bot.message_handler(regexp='^#aloud_in_private\s(\w|\W)*')
-def aloud_in_private(message):
+def publish_claim(message):
     user_id = message.from_user.id
     if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
         text = message.html_text[len('#aloud_in_private'):]
