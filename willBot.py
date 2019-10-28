@@ -1,3 +1,6 @@
+import os
+import pickle
+
 import telebot
 import telebot.apihelper
 from telebot import types
@@ -6,9 +9,23 @@ from helpers import log
 from property import EMOJI
 from property import PRP
 
+LAST_WILL_USERS_FILE = 'last_will.pickle'
+
 bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
 
 polling_status = {}
+
+last_will_users = set()
+
+if os.path.isfile(LAST_WILL_USERS_FILE):
+    with open(LAST_WILL_USERS_FILE, 'rb') as handle:
+        last_will_users = pickle.load(handle)
+
+
+def add_last_will_user(user_id):
+    last_will_users.add(user_id)
+    with open(LAST_WILL_USERS_FILE, 'ab') as handle:
+        pickle.dump(last_will_users, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def in_private(message):
@@ -32,6 +49,29 @@ def send_welcome(message):
     bot.send_sticker(message.chat.id, sti)
     bot.reply_to(message, "Готов к работе. Напиши сообщение с тегом #aloud_in_private "
                           "в самом начале, и я отправлю его в студенческий чат для голосования.")
+
+
+@bot.message_handler(regexp='^#last_will\s(\w|\W)*')
+def aloud_in_private(message):
+    user_id = message.from_user.id
+    if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
+        if user_id in last_will_users:
+            sticker_rejection = open('stikers/last_will_rejection.webp', 'rb')
+            bot.send_sticker(message.chat.id, sticker_rejection)
+            bot.reply_to(message, "Вы уже использовали последнию волю!")
+        else:
+            add_last_will_user(user_id)
+            text = message.html_text[len('#last_will'):]
+            sti_last_will = open('stikers/last_will.webp', 'rb')
+            sti = open('stikers/claim_accepted.webp', 'rb')
+
+            bot.send_sticker(message.chat.id, sti)
+            bot.reply_to(message, "Ваше обращение принято.")
+
+            bot.send_sticker(PRP.COMMON_CHAT, sti_last_will)
+            bot.send_message(PRP.COMMON_CHAT, "<b>Последняя воля была использована!</b>\n" + text, parse_mode="HTML")
+    else:
+        bot.reply_to(message, "Эй, такое только в личку!")
 
 
 # TODO decorator
@@ -64,7 +104,7 @@ def handle_pool(message, message_id):
             text = message.message.html_text
             sti = open('stikers/common_chat_publish.webp', 'rb')
             bot.send_sticker(PRP.COMMON_CHAT, sti)
-            bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text,parse_mode="HTML")
+            bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text, parse_mode="HTML")
             bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
             bot.delete_message(PRP.STUDENT_CHAT_ID, polling[3])
             del polling_status[message_id]
