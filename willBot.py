@@ -62,7 +62,9 @@ def handle_pool(message, message_id):
     if len(likes) + len(dislikes) + len(hates) >= MINIMUM_COUNT:
         if len(likes) >= len(dislikes) + len(hates):
             text = message.message.html_text
-            bot.send_message(PRP.COMMON_CHAT, text)
+            sti = open('stikers/common_chat_publish.webp', 'rb')
+            bot.send_sticker(PRP.COMMON_CHAT, sti)
+            bot.send_message(PRP.COMMON_CHAT, "<b>Люди выразили своё мнение:</b> \n" + text,parse_mode="HTML")
             bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
         elif len(hates) >= DELETE_MESSAGE_COUNT:
             bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
@@ -72,10 +74,14 @@ def publish_claim_to_chat(text):
     markup = types.InlineKeyboardMarkup()
     btn_my_site = types.InlineKeyboardButton(EMOJI.THUMBS_UP + " 0", callback_data="LIKE")
     btn_my_site1 = types.InlineKeyboardButton(EMOJI.THUMBS_DOWN + " 0", callback_data="HATE")
-    btn_my_site2 = types.InlineKeyboardButton("НЕ ЗНАЮ 0", callback_data="NOT_KNOW")
+    btn_my_site2 = types.InlineKeyboardButton(EMOJI.EYE + " 0", callback_data="NOT_KNOW")
 
     l = [btn_my_site, btn_my_site1, btn_my_site2]
     markup.row(*l)
+
+    sti = open('stikers/cries.webp', 'rb')
+    bot.send_sticker(PRP.STUDENT_CHAT_ID, sti)
+
     message = bot.send_message(PRP.STUDENT_CHAT_ID, text, reply_markup=markup)
     polling_status[message.message_id] = [set(), set(), set()]
 
