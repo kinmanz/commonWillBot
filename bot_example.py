@@ -41,6 +41,25 @@ def aloud_in_private(message):
     else:
         bot.reply_to(message, "Эй, такое только в личку!")
 
+MINIMUM_COUNT = 1 #TODO 15
+DELETE_MESSAGE_COUNT = 2 #TODO 7
+PUBLISH_MESSAGE_CONT = 10
+MINIMUM_COUNT_TO_POST = 2 # TODO 15
+
+
+def handle_pool(message, message_id):
+    polling = polling_status[message_id]
+    likes = polling[0]
+    dislikes = polling[1]
+    hates = polling[2]
+    if len(likes) + len(dislikes) + len(hates) >= MINIMUM_COUNT:
+        if len(likes) >= len(dislikes) + len(hates):
+            text = message.message.html_text
+            bot.send_message(PRP.COMMON_CHAT, text)
+            bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
+        elif len(hates) >= DELETE_MESSAGE_COUNT:
+            bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
+
 
 def publish_claim_to_chat(text):
     markup = types.InlineKeyboardMarkup()
@@ -88,8 +107,8 @@ def test_callback(call):
         stat[0].discard(user_id)
         stat[1].discard(user_id)
     else:
-        return;
-
+        return
+    handle_pool(call, message_id)
     btn_my_site = types.InlineKeyboardButton(f"{EMOJI.THUMBS_UP} {len(stat[0])}", callback_data="LIKE")
     btn_my_site1 = types.InlineKeyboardButton(f"{EMOJI.THUMBS_DOWN} {len(stat[1])}", callback_data="HATE")
     btn_my_site2 = types.InlineKeyboardButton(f"{EMOJI.EYE} {len(stat[2])}", callback_data="NOT_KNOW")
