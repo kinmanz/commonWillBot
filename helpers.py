@@ -1,13 +1,19 @@
 import re
 import time
 from collections import deque
+import logging
+from logging.handlers import RotatingFileHandler
+
+logging.basicConfig(filename="bot.log", level=logging.INFO, filemode="w")
+my_log = logging.getLogger()
+handler = RotatingFileHandler("maxsize", maxBytes=2048, backupCount=1)
+my_log.addHandler(handler)
 
 from property import ALLOWED_TIME_PASSED, REJECTION, REJECTION_TIME
 
 
-def log(*messages):
-    # TODO Real logging
-    print(*messages)
+def log(*args):
+    list(map(logging.info, args))
 
 
 REGEX_HTML_CLEANER = re.compile('<.*?>')
