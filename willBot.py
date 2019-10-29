@@ -1,5 +1,6 @@
 import os
 import pickle
+from random import randrange
 
 import telebot
 import telebot.apihelper
@@ -63,11 +64,37 @@ def send_welcome(message):
             "<b>Помни:</b>\n"
             f"{EMOJI.POINT_RIGHT} Любому студенту положен 1 пост в день.\n"
             f"{EMOJI.POINT_RIGHT} Если многие поставят тебе {EMOJI.REJECT} ты не сможешь постить своё "
-            "мнение очень и очень долго.\n\n"
+            "мнение очень и очень долго.\n"
+            f"{EMOJI.POINT_RIGHT} Хочешь проверить как будет выглядить твой пост используй тег #dry_run \n"
             "Если тебе охота сказать последнее слово используй #last_will\n"
             "(его говорят только однажды и сразу в общий чат).",
             parse_mode="HTML"
         )
+
+
+@bot.message_handler(regexp='^#dry_run\s(\w|\W)*')
+def dry_run(message):
+    if not in_private(message):
+        return
+    user_id = message.from_user.id
+
+    if not is_member(PRP.STUDENT_CHAT_ID, user_id):
+        return
+
+    text = message.html_text[len('#dry_run '):]
+    send_stiker(message.chat.id, "cries")
+
+    btn_my_site = types.InlineKeyboardButton(f"{EMOJI.THUMBS_UP} {randrange(30)}", callback_data="dry_run")
+    btn_my_site1 = types.InlineKeyboardButton(f"{EMOJI.THUMBS_DOWN} {randrange(30)}", callback_data="dry_run")
+    btn_my_site2 = types.InlineKeyboardButton(f"{EMOJI.REJECT} {randrange(30)}", callback_data="dry_run")
+
+    markup = types.InlineKeyboardMarkup().row(btn_my_site, btn_my_site1, btn_my_site2)
+    bot.send_message(
+        message.chat.id,
+        POLL_TITLE + clean_html(text),
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
 
 
 @bot.message_handler(regexp='^#last_will\s(\w|\W)*')
@@ -204,6 +231,8 @@ def poll_vote_update(call):
         stat.add_dislike(user_id)
     elif type_of_query == 'REJECT':
         stat.add_reject(user_id)
+    else:
+        return
 
     if handle_poll(call, message_id):  # poll deleted
         return
