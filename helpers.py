@@ -74,8 +74,9 @@ class RejectProtector:
     def __init__(self):
         self.rejections = deque(maxlen=REJECTION)
 
-    def add_rejection(self):
-        self.rejections.append(time.time())
+    def add_rejection(self, times):
+        for i in range(times):
+            self.rejections.append(time.time())
 
     def can_post(self):
         if len(self.rejections) == REJECTION:

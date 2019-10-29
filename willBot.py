@@ -11,6 +11,9 @@ from property import *
 bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
 
 TRACKED_POLLS = {}
+
+MSG_ID_TO_USR_ID = {}
+
 MULTI_POLLS_PROTECTION = {}
 
 LAST_WILL_USED_USERS = set()
@@ -96,6 +99,13 @@ def last_will(message):
 def publish_claim(message):
     user_id = message.from_user.id
 
+    if not in_private(message):
+        bot.reply_to(message, "Эй, такое только в личку!")
+        return
+
+    if not is_member(PRP.STUDENT_CHAT_ID, user_id):
+        return
+
     # protection from bad users
     if user_id not in MULTI_POLLS_PROTECTION:
         MULTI_POLLS_PROTECTION[user_id] = (TimeProtector(), RejectProtector())
@@ -116,13 +126,10 @@ def publish_claim(message):
             return
         time_protector.refresh_time()
 
-    if in_private(message) and is_member(PRP.STUDENT_CHAT_ID, user_id):
-        text = message.html_text[len('#aloud_in_private '):]
-        send_stiker(message.chat.id, "claim_accepted")
-        bot.reply_to(message, "Ваше обращение принято.")
-        publish_claim_to_chat(text)
-    else:
-        bot.reply_to(message, "Эй, такое только в личку!")
+    text = message.html_text[len('#aloud_in_private '):]
+    send_stiker(message.chat.id, "claim_accepted")
+    bot.reply_to(message, "Ваше обращение принято.")
+    publish_claim_to_chat(text, user_id)
 
 
 def handle_poll(message, message_id) -> bool:
@@ -150,11 +157,16 @@ def handle_poll(message, message_id) -> bool:
     if should_delete:
         bot.delete_message(PRP.STUDENT_CHAT_ID, message_id)
         bot.delete_message(PRP.STUDENT_CHAT_ID, stat.stiker_id)
+
+        user_id = MSG_ID_TO_USR_ID[message_id]
+        MULTI_POLLS_PROTECTION[user_id][1].add_rejection(len(rejects))
+
+        del MSG_ID_TO_USR_ID[message_id]
         del TRACKED_POLLS[message_id]
     return should_delete
 
 
-def publish_claim_to_chat(text):
+def publish_claim_to_chat(text, user_id):
     sti_msg = send_stiker(PRP.STUDENT_CHAT_ID, "cries")
 
     btn_my_site = types.InlineKeyboardButton(f"{EMOJI.THUMBS_UP} 0", callback_data="LIKE")
@@ -169,6 +181,7 @@ def publish_claim_to_chat(text):
         parse_mode="HTML"
     )
     TRACKED_POLLS[message.message_id] = PollStat(stiker_id=sti_msg.message_id)
+    MSG_ID_TO_USR_ID[message.message_id] = user_id
 
 
 @bot.callback_query_handler(func=lambda call: True)
