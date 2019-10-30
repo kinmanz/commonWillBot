@@ -13,8 +13,8 @@ from property import ALLOWED_TIME_PASSED, REJECTION, REJECTION_TIME
 
 
 def log(*args):
-    print(*args)
-    # list(map(logging.info, args))
+    # print(*args)
+    list(map(logging.info, args))
 
 
 REGEX_HTML_CLEANER = re.compile('<.*?>')
