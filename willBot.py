@@ -9,7 +9,7 @@ from telebot import types
 from helpers import log, PollStat, RejectProtector, TimeProtector, clean_html
 from property import *
 
-bot = telebot.TeleBot(PRP.BOT_TOKEN, threaded=False)
+bot = telebot.TeleBot(PRP.BOT_TOKEN)
 
 TRACKED_POLLS = {}
 
@@ -246,4 +246,4 @@ def poll_vote_update(call):
     # log(f"Callback : {call}")
 
 
-bot.polling(none_stop=True, interval=0)
+bot.polling(none_stop=True, interval=2.5, timeout=3)
